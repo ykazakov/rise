@@ -59,13 +59,23 @@ export class RiseShell extends Widget implements JupyterFrontEnd.IShell {
     area?: string,
     options?: DocumentRegistry.IOpenOptions
   ): void {
-    if ((this.layout as BoxLayout).widgets.length > 0 || area !== 'rise') {
-      // Bail
+    const isRiseArea = area === 'rise';
+    if (isRiseArea && (this.layout as BoxLayout).widgets.length > 0) {
+      // If we already have a rise widget, we might want to replace it or bail
+      // For now, let's keep the bail for the primary widget if already present
       return;
     }
+    
     BoxLayout.setStretch(widget, 1);
     (this.layout as BoxLayout).addWidget(widget);
-    this._currentWidget = widget;
+
+    if (isRiseArea) {
+      this._currentWidget = widget;
+    } else {
+      // If it's not the main rise area, we might want to hide it
+      // so it doesn't interfere with the presentation UI
+      widget.hide();
+    }
   }
   /**
    * The focused widget in the application shell.
