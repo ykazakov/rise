@@ -796,11 +796,24 @@ namespace Rise {
    */
   let outputObserver: MutationObserver | null = null;
   function setupOutputObserver() {
+    let isSyncing = false;
     function mutationHandler(mutationRecords: MutationRecord[]) {
+      if (isSyncing) {
+        return;
+      }
       mutationRecords.forEach(mutation => {
         if (mutation.addedNodes && mutation.addedNodes.length) {
-          Reveal.sync();
-          setScrollingSlide();
+          isSyncing = true;
+          try {
+            Reveal.sync();
+            setScrollingSlide();
+          } finally {
+            // Use a small delay or requestAnimationFrame to ensure the mutation is processed
+            // before allowing another sync.
+            window.requestAnimationFrame(() => {
+              isSyncing = false;
+            });
+          }
         }
       });
     }
