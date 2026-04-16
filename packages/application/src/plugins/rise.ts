@@ -795,27 +795,31 @@ namespace Rise {
    * This fixes issue #188: https://github.com/jupyterlab-contrib/rise/issues/188
    */
   let outputObserver: MutationObserver | null = null;
+  let isSyncing = false;
   function setupOutputObserver() {
-    let isSyncing = false;
+    if (outputObserver) {
+      outputObserver.disconnect();
+    }
     function mutationHandler(mutationRecords: MutationRecord[]) {
       if (isSyncing) {
         return;
       }
-      mutationRecords.forEach(mutation => {
-        if (mutation.addedNodes && mutation.addedNodes.length) {
-          isSyncing = true;
-          try {
-            Reveal.sync();
-            setScrollingSlide();
-          } finally {
-            // Use a small delay or requestAnimationFrame to ensure the mutation is processed
-            // before allowing another sync.
-            window.requestAnimationFrame(() => {
-              isSyncing = false;
-            });
-          }
+      const hasAddedNodes = mutationRecords.some(
+        mutation => mutation.addedNodes && mutation.addedNodes.length
+      );
+      if (hasAddedNodes) {
+        isSyncing = true;
+        try {
+          Reveal.sync();
+          setScrollingSlide();
+        } finally {
+          // Use a small delay or requestAnimationFrame to ensure the mutation is processed
+          // before allowing another sync.
+          window.requestAnimationFrame(() => {
+            isSyncing = false;
+          });
         }
-      });
+      }
     }
 
     const outputs = document.querySelectorAll('.output');
