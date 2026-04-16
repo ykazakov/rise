@@ -815,9 +815,9 @@ namespace Rise {
         } finally {
           // Use a small delay or requestAnimationFrame to ensure the mutation is processed
           // before allowing another sync.
-          window.requestAnimationFrame(() => {
+          setTimeout(() => {
             isSyncing = false;
-          });
+          }, 0);
         }
       }
     }
