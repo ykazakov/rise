@@ -793,29 +793,55 @@ namespace Rise {
 
   /* Setup a MutationObserver to call Reveal.sync when an output is generated.
    * This fixes issue #188: https://github.com/jupyterlab-contrib/rise/issues/188
+   *
+   * The handler is debounced and guarded against re-entrant calls to avoid the
+   * infinite mutation loop described in issue #144: when jupyter-collaboration
+   * (or ipywidgets >= 8) is active, Reveal.sync() causes further DOM mutations
+   * that re-trigger this observer, ultimately leading to a stack overflow
+   * ("Maximum call stack size exceeded").
+   *
+   * Two-pronged protection:
+   *   1. `isSyncing` flag: mutations fired while Reveal.sync() is running are
+   *      ignored so the observer cannot feed back into itself synchronously.
+   *   2. Debounce timer: rapid bursts of mutations (e.g. from RTC/collaboration
+   *      updates) are collapsed into a single Reveal.sync() call executed after
+   *      the burst settles, rather than calling sync for every individual node
+   *      addition.
    */
   let outputObserver: MutationObserver | null = null;
   function setupOutputObserver() {
+    // Re-entrancy guard: true while Reveal.sync() is executing.
     let isSyncing = false;
-    function mutationHandler(mutationRecords: MutationRecord[]) {
-      if (isSyncing) {
+    // Debounce handle: used to collapse rapid mutation bursts.
+    let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const SYNC_DEBOUNCE_MS = 100;
+
+    function scheduleSyncIfNeeded(hasAddedNodes: boolean) {
+      if (!hasAddedNodes || isSyncing) {
+        // Either no relevant change, or Reveal.sync() is already running —
+        // skip to prevent re-entrant / infinite loops.
         return;
       }
-      mutationRecords.forEach(mutation => {
-        if (mutation.addedNodes && mutation.addedNodes.length) {
-          isSyncing = true;
-          try {
-            Reveal.sync();
-            setScrollingSlide();
-          } finally {
-            // Use a small delay or requestAnimationFrame to ensure the mutation is processed
-            // before allowing another sync.
-            window.requestAnimationFrame(() => {
-              isSyncing = false;
-            });
-          }
+      if (syncDebounceTimer !== null) {
+        clearTimeout(syncDebounceTimer);
+      }
+      syncDebounceTimer = setTimeout(() => {
+        syncDebounceTimer = null;
+        isSyncing = true;
+        try {
+          Reveal.sync();
+          setScrollingSlide();
+        } finally {
+          isSyncing = false;
         }
-      });
+      }, SYNC_DEBOUNCE_MS);
+    }
+
+    function mutationHandler(mutationRecords: MutationRecord[]) {
+      const hasAddedNodes = mutationRecords.some(
+        mutation => mutation.addedNodes && mutation.addedNodes.length > 0
+      );
+      scheduleSyncIfNeeded(hasAddedNodes);
     }
 
     const outputs = document.querySelectorAll('.output');
