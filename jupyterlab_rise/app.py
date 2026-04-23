@@ -72,6 +72,22 @@ class RiseHandler(ExtensionHandlerJinjaMixin, ExtensionHandlerMixin, JupyterHand
                 logger=self.log,
             ),
         )
+
+        disabled_extensions = set(page_config.get("disabledExtensions", []))
+        disabled_extensions.update(
+            {
+                "@jupyter/docprovider-extension:yfile",
+                "@jupyter/docprovider-extension:statusBarTimeline",
+                "@jupyter/collaboration-extension:defaultFileBrowser",
+                "@jupyter/collaboration-extension:rtcGlobalAwareness",
+                "@jupyter/collaboration-extension:rtcPanel",
+                "@jupyter/collaboration-extension:userMenu",
+                "@jupyter/collaboration-extension:user-menu-bar",
+                "@jupyter/collaboration-extension:shared-link",
+                "@jupyter/collaboration-extension:userEditorCursors",
+            }
+        )
+        page_config["disabledExtensions"] = sorted(disabled_extensions)
         return page_config
 
     @web.authenticated

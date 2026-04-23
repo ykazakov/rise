@@ -4,6 +4,10 @@
 // Inspired by: https://github.com/jupyterlab/jupyterlab/blob/master/dev_mode/index.js
 
 import { PageConfig, URLExt } from '@jupyterlab/coreutils';
+import '@jupyterlab/filebrowser';
+import '@jupyterlab/fileeditor';
+import '@jupyterlab/statedb';
+import '@jupyterlab/statusbar';
 
 // Promise.allSettled polyfill, until our supported browsers implement it
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled
@@ -133,7 +137,7 @@ async function main() {
     require('@jupyterlab/shortcuts-extension'),
     // require('@jupyterlab/theme-light-extension'),
     require('@jupyterlab/translation-extension').default.filter(({ id }) =>
-      ['@jupyterlab/translation:translator'].includes(id)
+      ['@jupyterlab/translation-extension:translator'].includes(id)
     )
   ];
 
