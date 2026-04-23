@@ -6,7 +6,7 @@ import {
 import { Dialog, ICommandPalette, showDialog } from '@jupyterlab/apputils';
 import { ICellModel } from '@jupyterlab/cells';
 import { IEditorLanguageRegistry } from '@jupyterlab/codemirror';
-import { IChangedArgs, PageConfig, PathExt } from '@jupyterlab/coreutils';
+import { IChangedArgs, PageConfig, PathExt, URLExt } from '@jupyterlab/coreutils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import {
   INotebookModel,
@@ -14,6 +14,7 @@ import {
   NotebookActions,
   NotebookPanel
 } from '@jupyterlab/notebook';
+import { ServerConnection } from '@jupyterlab/services';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import {
   TranslationBundle,
@@ -924,26 +925,85 @@ namespace Rise {
     // https://github.com/jupyterlab-contrib/rise/issues/509
     // Attempt to load rise.css
     const curdir = PathExt.dirname(panel.sessionContext.path);
-    const riseCssUrl = new URL(
-      PathExt.join('files', curdir, 'rise.css'),
-      PageConfig.getBaseUrl()
-    );
-    document.head.insertAdjacentHTML(
-      'beforeend',
-      `<link rel="stylesheet" href="${riseCssUrl.href}" id="rise-custom-css" />`
-    );
+    const serverSettings = ServerConnection.makeSettings();
+
+    const requestContents = async (path: string): Promise<any | null> => {
+      const requestUrl = URLExt.join(
+        serverSettings.baseUrl,
+        'api/contents',
+        path
+      );
+
+      try {
+        const response = await ServerConnection.makeRequest(
+          requestUrl,
+          { method: 'GET' },
+          serverSettings
+        );
+
+        if (!response.ok) {
+          return null;
+        }
+
+        return response.json();
+      } catch {
+        return null;
+      }
+    };
+
+    const injectNotebookCss = async (
+      cssPath: string,
+      styleId: string
+    ): Promise<void> => {
+      if (!cssPath) {
+        return;
+      }
+
+      const directoryPath = PathExt.dirname(cssPath);
+      const cssName = PathExt.basename(cssPath);
+      const directoryModel = await requestContents(
+        directoryPath === '.' ? '' : directoryPath
+      );
+
+      if (directoryModel?.type !== 'directory' || !Array.isArray(directoryModel.content)) {
+        return;
+      }
+
+      const cssEntry = directoryModel.content.find(
+        (entry: any) => entry?.type === 'file' && entry?.name === cssName
+      );
+
+      if (!cssEntry) {
+        return;
+      }
+
+      try {
+        const model = await requestContents(cssPath);
+        if (model.type !== 'file' || typeof model.content !== 'string') {
+          return;
+        }
+
+        const existing = document.getElementById(styleId);
+        existing?.remove();
+
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = model.content;
+        document.head.appendChild(style);
+      } catch {
+        /* ignore missing custom css */
+      }
+    };
+
+    void injectNotebookCss(PathExt.join(curdir, 'rise.css'), 'rise-custom-css');
+
     const name = PathExt.basename(panel.sessionContext.path);
     const dot_index = name.lastIndexOf('.');
     const stem = dot_index === -1 ? name : name.substr(0, dot_index);
     // associated css
-    const nameCssUrl = new URL(
-      PathExt.join('files', curdir, `${stem}.css`),
-      PageConfig.getBaseUrl()
-    );
-    // Attempt to load css with the same path as notebook
-    document.head.insertAdjacentHTML(
-      'beforeend',
-      `<link rel="stylesheet" href="${nameCssUrl.href}" id="rise-notebook-css" />`
+    void injectNotebookCss(
+      PathExt.join(curdir, `${stem}.css`),
+      'rise-notebook-css'
     );
 
     // Asynchronously import reveal

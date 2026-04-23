@@ -23,25 +23,25 @@
     {
       "command": "RISE:preview",
       "keys": ["Alt R"],
-      "selector": ".jp-Notebook:focus"
+      "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
     },
     {
       "command": "RISE:set-slide-type",
       "args": { "type": "slide" },
       "keys": ["Shift I"],
-      "selector": ".jp-Notebook:focus"
+      "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
     },
     {
       "command": "RISE:set-slide-type",
       "args": { "type": "subslide" },
       "keys": ["Shift B"],
-      "selector": ".jp-Notebook:focus"
+      "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
     },
     {
       "command": "RISE:set-slide-type",
       "args": { "type": "fragment" },
       "keys": ["Shift G"],
-      "selector": ".jp-Notebook:focus"
+      "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
     },
     {
       "command": "RISE:firstSlide",
@@ -66,7 +66,7 @@
     {
       "command": "RISE:fullscreenHelp",
       "keys": ["F"],
-      "selector": ".lm-Widget.reveal .jp-Notebook:focus"
+      "selector": ".lm-Widget.reveal .jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
     },
     {
       "command": "RISE:riseHelp",
@@ -116,7 +116,7 @@
     {
       "command": "RISE:smart-exec",
       "keys": ["Shift Enter"],
-      "selector": ".lm-Widget.reveal .jp-Notebook:focus"
+      "selector": ".lm-Widget.reveal .jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
     }
   ],
   "type": "object",
