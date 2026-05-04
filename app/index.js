@@ -133,6 +133,7 @@ async function main() {
         '@jupyterlab/notebook-extension:cell-executor'
       ].includes(id)
     ),
+    require('@jupyter-widgets/jupyterlab-manager'),
     require('@jupyterlab/rendermime-extension'),
     require('@jupyterlab/shortcuts-extension'),
     // require('@jupyterlab/theme-light-extension'),
@@ -172,9 +173,18 @@ async function main() {
   );
 
   const mods = [];
+  const pluginIds = new Set();
   const federatedExtensionPromises = [];
   const federatedMimeExtensionPromises = [];
   const federatedStylePromises = [];
+
+  function addPlugin(plugin) {
+    if (pluginIds.has(plugin.id)) {
+      return;
+    }
+    pluginIds.add(plugin.id);
+    mods.push(plugin);
+  }
 
   const extensions = await Promise.allSettled(
     extension_data.map(async data => {
@@ -215,7 +225,7 @@ async function main() {
   const baseFrontendMods = await Promise.all(baseMods);
   baseFrontendMods.forEach(p => {
     for (let plugin of activePlugins(p)) {
-      mods.push(plugin);
+      addPlugin(plugin);
     }
   });
 
@@ -226,7 +236,7 @@ async function main() {
   federatedExtensions.forEach(p => {
     if (p.status === 'fulfilled') {
       for (let plugin of activePlugins(p.value)) {
-        mods.push(plugin);
+        addPlugin(plugin);
       }
     } else {
       console.error(p.reason);

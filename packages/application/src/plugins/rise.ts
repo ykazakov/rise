@@ -806,7 +806,9 @@ namespace Rise {
       });
     }
 
-    const outputs = document.querySelectorAll('.output');
+    const outputs = document.querySelectorAll(
+      '.jp-OutputArea, .jp-OutputArea-output, .output'
+    );
     const MutationObserver =
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
